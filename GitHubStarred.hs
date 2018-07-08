@@ -29,10 +29,10 @@ printRepoData (r:rs) = do putStr "Repo Name: "
                           putStrLn "=========="
                           printRepoData rs
 
-trimRepoList ::[Repo] -> Int -> IO ()
-trimRepoList [] c = putStrLn "No Repos to Display."
-trimRepoList rs 0 = putStrLn "No Repos to Display."
-trimRepoList rs c = printRepoData (take c rs)
+trimRepoList ::[Repo] -> Int -> [Repo]
+trimRepoList [] c = []
+trimRepoList rs 0 = []
+trimRepoList rs c = take c rs
  
 main :: IO ()
 main = do
@@ -43,4 +43,4 @@ main = do
   d <- (eitherDecode <$> getJSON) :: IO (Either String [Repo])
   case d of
     Left err -> putStrLn err
-    Right rs -> trimRepoList rs rCount
+    Right rs -> printRepoData $ trimRepoList rs rCount
