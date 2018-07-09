@@ -4,8 +4,8 @@ import Data.Aeson
 import Data.Text hiding (take)
 import Control.Applicative
 import Control.Monad
-import qualified Data.ByteString.Lazy as B
 import GHC.Generics
+import Network.HTTP.Simple
 
 data Repo =
     Repo { name     :: String
@@ -13,12 +13,6 @@ data Repo =
          } deriving (Show,Generic)
 
 instance FromJSON Repo
-
-jsonFile :: FilePath
-jsonFile = "gh.json"
-
-getJSON :: IO B.ByteString
-getJSON = B.readFile jsonFile
 
 printRepoData :: [Repo] -> IO()
 printRepoData [] = putStrLn "End of Repos."
@@ -33,14 +27,25 @@ trimRepoList ::[Repo] -> Int -> [Repo]
 trimRepoList [] c = []
 trimRepoList rs 0 = []
 trimRepoList rs c = take c rs
+
+buildUrl :: String -> String -> IO Request
+buildUrl n c = parseRequest $ "https://api.github.com/users/"
+                              <> n
+                              <> "/starred?per_page="
+                              <> c
+
+pullFromHttp :: Request -> IO [Repo]
+pullFromHttp u = do
+  let request = setRequestHeader "User-Agent" ["test-app"] $ u
+  response <- httpJSON request
+  return $ getResponseBody response
  
 main :: IO ()
 main = do
   putStrLn "Enter username:"
   name <- getLine
   putStrLn "Enter number of repos:"
-  rCount :: Int <- readLn
-  d <- (eitherDecode <$> getJSON) :: IO (Either String [Repo])
-  case d of
-    Left err -> putStrLn err
-    Right rs -> printRepoData $ trimRepoList rs rCount
+  rCount <- getLine
+  url <- buildUrl name rCount
+  rs <- pullFromHttp url
+  printRepoData rs
